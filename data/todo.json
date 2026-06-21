@@ -1,0 +1,14 @@
+[
+  {
+    "id": "ee918bcf40014151bc7f8204a71ec6ba",
+    "text": "Fix the bugs in Jarvis",
+    "done": true,
+    "created_at": "2026-06-21T22:14:52"
+  },
+  {
+    "id": "dc73fdbbb9574a678e9097742b07806e",
+    "text": "I need to learn how to script properly",
+    "done": false,
+    "created_at": "2026-06-21T22:17:57"
+  }
+]

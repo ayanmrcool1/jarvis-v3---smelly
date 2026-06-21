@@ -1,0 +1,49 @@
+{
+  "trading_mode": {
+    "display_name": "Trading Mode",
+    "trigger_phrases": [
+      "trading mode",
+      "start trading mode",
+      "start trading",
+      "begin trading"
+    ],
+    "steps": [
+      {
+        "type": "url",
+        "label": "TradingView",
+        "value": "https://www.tradingview.com/"
+      },
+      {
+        "type": "url",
+        "label": "Nasdaq futures",
+        "value": "https://www.nasdaq.com/market-activity/futures"
+      }
+    ]
+  },
+  "journal_mode": {
+    "display_name": "Journal Mode",
+    "trigger_phrases": [
+      "journal mode",
+      "start journal mode",
+      "start journal",
+      "open journal"
+    ],
+    "steps": [
+      {
+        "type": "app",
+        "label": "Chrome",
+        "value": "chrome"
+      }
+    ]
+  },
+  "focus_mode": {
+    "display_name": "Focus Mode",
+    "trigger_phrases": [
+      "focus mode",
+      "start focus mode",
+      "start focus",
+      "lock in"
+    ],
+    "steps": []
+  }
+}

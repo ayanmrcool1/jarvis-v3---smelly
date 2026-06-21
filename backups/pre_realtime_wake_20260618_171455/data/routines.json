@@ -1,0 +1,103 @@
+{
+  "trading_mode": {
+    "display_name": "Trading Mode",
+    "trigger_phrases": [
+      "trading mode",
+      "start trading mode",
+      "start trading",
+      "begin trading"
+    ],
+    "steps": [
+      {
+        "type": "url",
+        "label": "TradingView",
+        "value": "https://www.tradingview.com/"
+      },
+      {
+        "type": "url",
+        "label": "Nasdaq futures",
+        "value": "https://www.nasdaq.com/market-activity/futures"
+      }
+    ]
+  },
+  "journal_mode": {
+    "display_name": "Journal Mode",
+    "trigger_phrases": [
+      "journal mode",
+      "start journal mode",
+      "start journal",
+      "open journal"
+    ],
+    "steps": [
+      {
+        "type": "app",
+        "label": "Chrome",
+        "value": "chrome"
+      }
+    ]
+  },
+  "focus_mode": {
+    "display_name": "Focus Mode",
+    "trigger_phrases": [
+      "focus mode",
+      "start focus mode",
+      "start focus",
+      "lock in"
+    ],
+    "steps": []
+  },
+  "trading_setup": {
+    "display_name": "Trading Setup",
+    "trigger_phrases": [
+      "trading setup",
+      "start trading setup",
+      "open trading setup",
+      "run trading setup",
+      "open my trading setup"
+    ],
+    "steps": [
+      {
+        "type": "url",
+        "label": "Trading View",
+        "value": "https://www.tradingview.com"
+      },
+      {
+        "type": "app",
+        "label": "Open Discord",
+        "value": "Discord"
+      },
+      {
+        "type": "volume",
+        "label": "Set volume to 50%",
+        "value": "down"
+      },
+      {
+        "type": "wait",
+        "label": "Wait for 5 seconds",
+        "value": "5"
+      }
+    ]
+  },
+  "study_reminder": {
+    "display_name": "Study Reminder",
+    "trigger_phrases": [
+      "study_reminder",
+      "start study_reminder",
+      "open study_reminder",
+      "run study_reminder",
+      "remind me to start studying"
+    ],
+    "steps": [
+      {
+        "type": "wait",
+        "label": "Wait for 3 hours",
+        "value": "3h"
+      },
+      {
+        "type": "message",
+        "label": "Reminder",
+        "value": "It's time to start studying!"
+      }
+    ]
+  }
+}

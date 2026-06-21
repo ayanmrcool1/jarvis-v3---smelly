@@ -1,0 +1,70 @@
+{
+  "status": "LISTENING",
+  "sub_status": "Listening",
+  "detail": "Waiting for speech",
+  "active_widgets": [],
+  "orb_position": "center",
+  "chat_messages": [
+    {
+      "id": "51dde793c2444bc9b8a919a652d7348e",
+      "role": "user",
+      "text": "Show me good headphones.",
+      "timestamp": "2026-06-21T23:16:26"
+    },
+    {
+      "id": "5dd50b4a6d12454d95c2e8edf1c6c184",
+      "role": "jarvis",
+      "text": "Searching YouTube.",
+      "timestamp": "2026-06-21T23:16:30"
+    },
+    {
+      "id": "11a3321633c84bb9b9ee49489fa91bf0",
+      "role": "user",
+      "text": "right here.",
+      "timestamp": "2026-06-21T23:16:34"
+    },
+    {
+      "id": "76419b20010243b6819d17559c914a2b",
+      "role": "jarvis",
+      "text": "Could you clarify what you mean by \"right here\"?",
+      "timestamp": "2026-06-21T23:16:39"
+    },
+    {
+      "id": "2fb159a62e5041a0a4b1091c74a95da3",
+      "role": "user",
+      "text": "Yeah, the mic is tweaking.",
+      "timestamp": "2026-06-21T23:16:45"
+    },
+    {
+      "id": "9c495503a61a4fb7a7157adbd63ddc0a",
+      "role": "jarvis",
+      "text": "It sounds like you might need to adjust the mic settings or reposition it. Would you like help with that?",
+      "timestamp": "2026-06-21T23:16:53"
+    },
+    {
+      "id": "801ea82e06984bbdbe4508d2a0e5eca0",
+      "role": "user",
+      "text": "For me good headphones on Google.",
+      "timestamp": "2026-06-21T23:16:57"
+    },
+    {
+      "id": "ca706b9ada564a0f96bfeda501cf7657",
+      "role": "jarvis",
+      "text": "Searching now.",
+      "timestamp": "2026-06-21T23:17:00"
+    },
+    {
+      "id": "c889b801981a4b8ab625f2db24175ef0",
+      "role": "user",
+      "text": "listening now.",
+      "timestamp": "2026-06-21T23:17:02"
+    },
+    {
+      "id": "b57a41ddd8ca4c228bf3def28eb49e5e",
+      "role": "jarvis",
+      "text": "I'm here and ready. What do you want to talk about?",
+      "timestamp": "2026-06-21T23:17:08"
+    }
+  ],
+  "updated_at": "2026-06-21T23:17:09"
+}

@@ -1,0 +1,182 @@
+[
+  {
+    "id": "b0fad71dd5c04ae59844b4c150310560",
+    "role": "user",
+    "text": "Thank you for your narration.",
+    "timestamp": "2026-06-21T22:56:43"
+  },
+  {
+    "id": "b16c13622ff84f84b69315c3e800c49a",
+    "role": "jarvis",
+    "text": "You're welcome!",
+    "timestamp": "2026-06-21T22:56:47"
+  },
+  {
+    "id": "bf344f3b6a7f489b9b0fc456798c2ed3",
+    "role": "user",
+    "text": "Can you please show me the chat widget?",
+    "timestamp": "2026-06-21T22:56:52"
+  },
+  {
+    "id": "785003b4301a44e28e215c6653652587",
+    "role": "jarvis",
+    "text": "Showing conversation.",
+    "timestamp": "2026-06-21T22:56:56"
+  },
+  {
+    "id": "77156d8e6ebf44c4964b82d97f8bc73a",
+    "role": "user",
+    "text": "How I do it.",
+    "timestamp": "2026-06-21T23:13:18"
+  },
+  {
+    "id": "22d5ae9200a14c04ad9ffb2f23fbe399",
+    "role": "jarvis",
+    "text": "Could you clarify what you need help with?",
+    "timestamp": "2026-06-21T23:13:26"
+  },
+  {
+    "id": "39cc76ca5a8345c7a6bc97b26ecef0f8",
+    "role": "user",
+    "text": "Can you search up how to fly?",
+    "timestamp": "2026-06-21T23:13:30"
+  },
+  {
+    "id": "e9b7e8d15eb94fb8be5afb11032565d4",
+    "role": "jarvis",
+    "text": "I'll check the web. To fly a plane, you'll generally follow these steps: 1. Get Training: Enroll in a flight school for lessons from a certified instructor. 2.",
+    "timestamp": "2026-06-21T23:13:47"
+  },
+  {
+    "id": "2431ef61ae0e45408524c0a0ceafb3c2",
+    "role": "user",
+    "text": "Let me stop it. Yo listen.",
+    "timestamp": "2026-06-21T23:13:52"
+  },
+  {
+    "id": "23b079e09f444e9d9fb2624c05a90098",
+    "role": "jarvis",
+    "text": "I'm here. What do you need?",
+    "timestamp": "2026-06-21T23:13:57"
+  },
+  {
+    "id": "67ce6c55f1a348bea2530a6caac4c230",
+    "role": "user",
+    "text": "Search the best headphones and show me.",
+    "timestamp": "2026-06-21T23:14:02"
+  },
+  {
+    "id": "b0a8ad1cdd7f432f9fabc80a2d01378b",
+    "role": "jarvis",
+    "text": "Searching now.",
+    "timestamp": "2026-06-21T23:14:06"
+  },
+  {
+    "id": "5c2f9f70102542c39837d970f8c8c589",
+    "role": "user",
+    "text": "That's pretty quick I think.",
+    "timestamp": "2026-06-21T23:14:08"
+  },
+  {
+    "id": "68b84693de854004991267002bffc404",
+    "role": "jarvis",
+    "text": "Glad you think so!",
+    "timestamp": "2026-06-21T23:14:12"
+  },
+  {
+    "id": "f70d4135895d478d84607d603a9951b8",
+    "role": "user",
+    "text": "this thing.",
+    "timestamp": "2026-06-21T23:14:14"
+  },
+  {
+    "id": "0c14052c8a6240619b8f90923e8ec9bb",
+    "role": "jarvis",
+    "text": "Could you specify what you mean by \"this thing\"?",
+    "timestamp": "2026-06-21T23:14:20"
+  },
+  {
+    "id": "d4e6b088a2654f1090da9d214ad22e47",
+    "role": "user",
+    "text": "listening.",
+    "timestamp": "2026-06-21T23:14:22"
+  },
+  {
+    "id": "57bb760f36b84cd8aef694e413c6b980",
+    "role": "jarvis",
+    "text": "I'm all ears. What do you want to discuss?",
+    "timestamp": "2026-06-21T23:14:28"
+  },
+  {
+    "id": "ca799ed8404c41a49134874753ab3593",
+    "role": "user",
+    "text": "I need to fix this shit. The stupid mic right here. It's so far away from me that it doesn't hear The whisper that isn't able to pick up what I'm saying properly",
+    "timestamp": "2026-06-21T23:14:37"
+  },
+  {
+    "id": "a3e503d5817a4c3e94a88bb182eb3aa3",
+    "role": "jarvis",
+    "text": "It sounds like your microphone needs adjusting. Would you like tips on how to fix it?",
+    "timestamp": "2026-06-21T23:14:46"
+  },
+  {
+    "id": "51dde793c2444bc9b8a919a652d7348e",
+    "role": "user",
+    "text": "Show me good headphones.",
+    "timestamp": "2026-06-21T23:16:26"
+  },
+  {
+    "id": "5dd50b4a6d12454d95c2e8edf1c6c184",
+    "role": "jarvis",
+    "text": "Searching YouTube.",
+    "timestamp": "2026-06-21T23:16:30"
+  },
+  {
+    "id": "11a3321633c84bb9b9ee49489fa91bf0",
+    "role": "user",
+    "text": "right here.",
+    "timestamp": "2026-06-21T23:16:34"
+  },
+  {
+    "id": "76419b20010243b6819d17559c914a2b",
+    "role": "jarvis",
+    "text": "Could you clarify what you mean by \"right here\"?",
+    "timestamp": "2026-06-21T23:16:39"
+  },
+  {
+    "id": "2fb159a62e5041a0a4b1091c74a95da3",
+    "role": "user",
+    "text": "Yeah, the mic is tweaking.",
+    "timestamp": "2026-06-21T23:16:45"
+  },
+  {
+    "id": "9c495503a61a4fb7a7157adbd63ddc0a",
+    "role": "jarvis",
+    "text": "It sounds like you might need to adjust the mic settings or reposition it. Would you like help with that?",
+    "timestamp": "2026-06-21T23:16:53"
+  },
+  {
+    "id": "801ea82e06984bbdbe4508d2a0e5eca0",
+    "role": "user",
+    "text": "For me good headphones on Google.",
+    "timestamp": "2026-06-21T23:16:57"
+  },
+  {
+    "id": "ca706b9ada564a0f96bfeda501cf7657",
+    "role": "jarvis",
+    "text": "Searching now.",
+    "timestamp": "2026-06-21T23:17:00"
+  },
+  {
+    "id": "c889b801981a4b8ab625f2db24175ef0",
+    "role": "user",
+    "text": "listening now.",
+    "timestamp": "2026-06-21T23:17:02"
+  },
+  {
+    "id": "b57a41ddd8ca4c228bf3def28eb49e5e",
+    "role": "jarvis",
+    "text": "I'm here and ready. What do you want to talk about?",
+    "timestamp": "2026-06-21T23:17:08"
+  }
+]
