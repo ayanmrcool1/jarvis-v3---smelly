@@ -6,3 +6,5 @@ __pycache__/
 *.log
 node_modules/
 .DS_Store
+data/web_hud_server.json
+data/tts_cache/

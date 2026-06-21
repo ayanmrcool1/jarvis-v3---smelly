@@ -12,6 +12,7 @@ from openai import OpenAI
 from speech_style import humanise_jarvis_response
 from tools.memory_tools import build_memory_context
 from tools.tool_registry import TOOL_DEFINITIONS, execute_tool_call
+from tools.capability_gap_tools import record_tool_failure_if_gap
 
 
 # =========================
@@ -47,7 +48,7 @@ Personality:
 
 Current capabilities:
 - You can respond to the user's transcribed speech.
-- You can speak aloud through Edge TTS.
+- You can speak aloud through the configured TTS voice.
 - You can open apps/websites, search the web, search/play YouTube videos, run safe terminal commands, control volume, get system stats, and get date/time.
 - You can create, update, list, and delete routines.
 - You can remember, list, and forget useful long-term information.
@@ -56,6 +57,7 @@ Current capabilities:
 - You can do fast web research for current online information without opening a visible browser.
 - You can open and close dynamic HUD widgets such as to-do, chat, system status, and now playing.
 - You can create, add to, list, complete, and remove tasks from Jarvis's built-in to-do list.
+- You can log and summarise recent capability gaps when requests fail or a missing capability is reported.
 
 Speed and speech rules:
 - Be extremely concise by default.
@@ -94,6 +96,10 @@ AI-first tool behavior:
 - Do not use act_on_screen to add, complete, remove, or create items in Jarvis's built-in to-do list.
 - If a tool fails, briefly say what failed.
 - Do not claim you opened, clicked, searched, analysed, or changed something unless a tool result confirms it.
+- If no available tool or current capability can complete the user's request, call log_capability_gap instead of only apologising.
+- If the user reports that Jarvis could not or cannot do something, use judgment and call log_capability_gap when it is a real capability gap.
+- If the user asks what Jarvis cannot do, what has failed recently, or what needs improvement, call summarize_capability_gaps.
+- Do not log normal clarification needs, confirmation requests, safety refusals, empty/no-result states, or temporary context issues as capability gaps unless they reveal a missing capability.
 
 Examples:
 - "What are the best wireless headphones right now?" -> fast_web_research.
@@ -232,6 +238,8 @@ User said:
             "list_todo_tasks",
             "complete_todo_task",
             "remove_todo_task",
+            "log_capability_gap",
+            "summarize_capability_gaps",
         ]
 
         if tool_name in direct_message_tools:
@@ -270,6 +278,25 @@ User said:
             return humanise_jarvis_response(result.get("message", "Done."))
 
         return None
+
+    def _record_tool_failure_gap(self, user_text, tool_name, arguments_json, tool_result):
+        try:
+            gap_result = record_tool_failure_if_gap(
+                original_request=user_text,
+                tool_name=tool_name,
+                arguments_json=arguments_json,
+                result=tool_result,
+            )
+
+            if gap_result and gap_result.get("success"):
+                gap = gap_result.get("gap", {})
+                print(
+                    "Capability gap logged: "
+                    f"{gap.get('category')} | {gap.get('original_request')}"
+                )
+
+        except Exception as error:
+            print(f"Capability gap logging warning: {error}")
 
     def _tool_start_phrase(self, tool_name, arguments_json="", user_text=""):
         try:
@@ -635,6 +662,13 @@ User said:
 
                 print(f"Tool result: {tool_result}")
 
+                self._record_tool_failure_gap(
+                    user_text=user_text,
+                    tool_name=tool_name,
+                    arguments_json=tool_args,
+                    tool_result=tool_result,
+                )
+
                 tool_results.append(
                     {
                         "tool_name": tool_name,
@@ -824,6 +858,13 @@ User said:
                 )
 
                 print(f"Tool result: {tool_result}")
+
+                self._record_tool_failure_gap(
+                    user_text=user_text,
+                    tool_name=tool_name,
+                    arguments_json=arguments_json,
+                    tool_result=tool_result,
+                )
 
                 assistant_tool_call = {
                     "id": tool_call_id,
