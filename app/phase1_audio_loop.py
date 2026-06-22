@@ -44,6 +44,25 @@ def get_env_float(name, default):
         return default
 
 
+def get_env_int(name, default, minimum=None):
+    value = os.getenv(name)
+
+    if value is None or str(value).strip() == "":
+        return default
+
+    try:
+        parsed = int(value)
+    except ValueError:
+        print(f"Invalid {name} value: {value!r}. Using {default}.")
+        return default
+
+    if minimum is not None and parsed < minimum:
+        print(f"Invalid {name} value: {value!r}. Using {default}.")
+        return default
+
+    return parsed
+
+
 SAMPLE_RATE = 16000
 CHANNELS = 1
 CHUNK_SIZE = 1280  # 80ms at 16kHz
@@ -64,6 +83,11 @@ WAKE_FOLLOWUP_SPEECH_START_TIMEOUT_SECONDS = get_env_float(
     "JARVIS_FOLLOWUP_SPEECH_START_TIMEOUT_SECONDS",
     8.0,
 )
+WAKE_SESSION_MAX_TURNS = get_env_int(
+    "JARVIS_WAKE_SESSION_MAX_TURNS",
+    8,
+    minimum=1,
+)
 KEYBIND_SILENCE_SECONDS_TO_STOP = get_env_float(
     "JARVIS_KEYBIND_SILENCE_SECONDS",
     5.0,
@@ -82,6 +106,21 @@ COMMON_WHISPER_HALLUCINATIONS = [
     "thanks for watching",
     "thank you",
 ]
+
+WAKE_SESSION_END_REQUESTS = {
+    "done",
+    "im done",
+    "i am done",
+    "thats all",
+    "that is all",
+    "nothing else",
+    "no thanks",
+    "no thank you",
+    "go to sleep",
+    "stop listening",
+    "goodbye",
+    "bye",
+}
 
 RECORDINGS_DIR = BASE_DIR / "recordings"
 RECORDINGS_DIR.mkdir(exist_ok=True)
@@ -485,6 +524,39 @@ def response_invites_follow_up(response, router):
     return clean_response.endswith("?")
 
 
+def user_requested_wake_session_end(transcription):
+    clean_text = normalize_text(transcription)
+
+    if not clean_text:
+        return False
+
+    return clean_text in WAKE_SESSION_END_REQUESTS
+
+
+def should_continue_wake_session(result, router, handled_turns):
+    status = result.get("status")
+
+    if status == "session_closed":
+        return False, "user ended the session"
+
+    if status == "timeout":
+        return False, "no follow-up speech detected"
+
+    if status == "cancelled":
+        return False, "listening was cancelled"
+
+    if status != "handled":
+        return False, "no command was handled"
+
+    if handled_turns >= WAKE_SESSION_MAX_TURNS:
+        return False, "wake session safety limit reached"
+
+    if response_invites_follow_up(result.get("response"), router):
+        return True, "follow-up invited"
+
+    return False, "turn completed"
+
+
 def run_voice_turn(
     stream,
     whisper_model,
@@ -495,6 +567,7 @@ def run_voice_turn(
     speech_start_timeout_seconds=WAKE_SPEECH_START_TIMEOUT_SECONDS,
     stop_event=None,
     manual_stop_label="Manual stop requested",
+    session_end_checker=None,
 ):
     command_profile_start = time.perf_counter()
 
@@ -523,6 +596,17 @@ def run_voice_turn(
             "response": "",
         }
 
+    if session_end_checker and session_end_checker(transcription):
+        print("Wake session end intent detected. Returning to sleep mode.")
+        set_ui_state("STANDBY", "Conversation ended")
+        add_chat_message("user", transcription)
+
+        return {
+            "status": "session_closed",
+            "transcription": transcription,
+            "response": "",
+        }
+
     response_result = route_and_speak(transcription, router, tts)
     flush_microphone_buffer(stream)
 
@@ -538,36 +622,46 @@ def run_voice_turn(
 
 def wake_word_command_mode(stream, whisper_model, router, tts, next_filename):
     print("\nWake command mode active.")
-    print("Listening for one command.\n")
+    print("Listening for one command, with bounded follow-up if needed.\n")
 
-    set_ui_state("LISTENING", "Wake word detected", "Listening for your command")
+    handled_turns = 0
+    waiting_for_followup = False
 
-    result = run_voice_turn(
-        stream=stream,
-        whisper_model=whisper_model,
-        router=router,
-        tts=tts,
-        filename=next_filename(),
-        silence_seconds_to_stop=SILENCE_SECONDS_TO_STOP,
-        speech_start_timeout_seconds=WAKE_SPEECH_START_TIMEOUT_SECONDS,
-    )
+    while True:
+        if waiting_for_followup:
+            print("Follow-up session still active. Listening again.\n")
+            set_ui_state("LISTENING", "Follow-up invited", "Listening for your reply")
+            speech_start_timeout = WAKE_FOLLOWUP_SPEECH_START_TIMEOUT_SECONDS
+        else:
+            set_ui_state("LISTENING", "Wake word detected", "Listening for your command")
+            speech_start_timeout = WAKE_SPEECH_START_TIMEOUT_SECONDS
 
-    if result.get("status") == "handled" and response_invites_follow_up(
-        result.get("response"),
-        router,
-    ):
-        print("Jarvis response invited a follow-up. Listening for one extra turn.\n")
-        set_ui_state("LISTENING", "Follow-up invited", "Listening for your reply")
-
-        run_voice_turn(
+        result = run_voice_turn(
             stream=stream,
             whisper_model=whisper_model,
             router=router,
             tts=tts,
             filename=next_filename(),
             silence_seconds_to_stop=SILENCE_SECONDS_TO_STOP,
-            speech_start_timeout_seconds=WAKE_FOLLOWUP_SPEECH_START_TIMEOUT_SECONDS,
+            speech_start_timeout_seconds=speech_start_timeout,
+            session_end_checker=user_requested_wake_session_end,
         )
+
+        if result.get("status") == "handled":
+            handled_turns += 1
+
+        should_continue, reason = should_continue_wake_session(
+            result,
+            router,
+            handled_turns,
+        )
+
+        print(f"Wake session decision: {reason}.")
+
+        if not should_continue:
+            break
+
+        waiting_for_followup = True
 
 
 def keybind_command_mode(stream, whisper_model, router, tts, next_filename, stop_event):
