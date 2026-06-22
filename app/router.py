@@ -37,6 +37,9 @@ def get_forced_tool_name(clean_text):
     Main intelligence is handled by stream_ask_with_tools() after local misses.
     """
 
+    if looks_like_capability_gap_summary_request(clean_text):
+        return "summarize_capability_gaps"
+
     # -------------------------
     # Screen / vision tools
     # -------------------------
@@ -245,6 +248,50 @@ def looks_like_system_stats_command(clean_text):
     ]
 
     return any(phrase in clean_text for phrase in direct_phrases)
+
+
+def looks_like_capability_gap_summary_request(clean_text):
+    if not clean_text:
+        return False
+
+    if "capability gap" in clean_text or "capability gaps" in clean_text:
+        return True
+
+    question_or_report_terms = [
+        "what",
+        "which",
+        "show",
+        "list",
+        "summarize",
+        "summarise",
+        "tell me",
+        "recent",
+    ]
+
+    limitation_terms = [
+        "cant",
+        "cannot",
+        "couldnt",
+        "unable",
+        "not able",
+        "limitations",
+        "limits",
+        "failed",
+        "failures",
+        "needs improvement",
+    ]
+
+    jarvis_terms = [
+        "you",
+        "your",
+        "jarvis",
+    ]
+
+    asks_about_limits = any(term in clean_text for term in question_or_report_terms)
+    mentions_limits = any(term in clean_text for term in limitation_terms)
+    mentions_jarvis = any(term in clean_text for term in jarvis_terms)
+
+    return asks_about_limits and mentions_limits and mentions_jarvis
 
 
 class JarvisRouter:

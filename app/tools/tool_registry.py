@@ -58,6 +58,11 @@ from tools.todo_tools import (
     remove_todo_task,
 )
 
+from tools.capability_gap_tools import (
+    log_capability_gap,
+    summarize_capability_gaps,
+)
+
 from tools.progress import ToolProgress
 
 
@@ -68,6 +73,109 @@ from tools.progress import ToolProgress
 # =========================
 
 TOOL_DEFINITIONS = [
+    # =========================
+    # CAPABILITY GAP TOOLS
+    # =========================
+    {
+        "type": "function",
+        "function": {
+            "name": "log_capability_gap",
+            "description": (
+                "Record a genuine Jarvis capability gap when the user request cannot be completed because no "
+                "appropriate current tool exists, a requested capability is missing, or the user reports that "
+                "Jarvis could not do something. Do not use this for ordinary clarifying questions, confirmation "
+                "requests, safety blocks, or normal no-result situations."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "original_request": {
+                        "type": "string",
+                        "description": "The user's original request or feedback in their own words.",
+                    },
+                    "attempted": {
+                        "type": "string",
+                        "description": "What Jarvis tried, or what would have been needed if no tool was available.",
+                    },
+                    "failure_reason": {
+                        "type": "string",
+                        "description": "Why Jarvis could not complete it.",
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "missing_tool",
+                            "tool_failure",
+                            "app_or_website",
+                            "browser_control",
+                            "screen_control",
+                            "web_research",
+                            "system_control",
+                            "terminal",
+                            "memory_or_data",
+                            "routine",
+                            "todo",
+                            "audio_voice",
+                            "external_dependency",
+                            "other",
+                        ],
+                    },
+                    "source": {
+                        "type": "string",
+                        "enum": [
+                            "ai_reported",
+                            "user_reported_gap",
+                            "missing_tool",
+                            "unsupported_request",
+                        ],
+                    },
+                },
+                "required": ["original_request", "attempted", "failure_reason", "category"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "summarize_capability_gaps",
+            "description": (
+                "Summarise recent capability gaps from data/capability_gaps.json. Use this when the user asks "
+                "what Jarvis cannot do, what has failed recently, what capability gaps exist, or what needs "
+                "to be improved."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "How many recent gaps to summarise. Default 5.",
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "missing_tool",
+                            "tool_failure",
+                            "app_or_website",
+                            "browser_control",
+                            "screen_control",
+                            "web_research",
+                            "system_control",
+                            "terminal",
+                            "memory_or_data",
+                            "routine",
+                            "todo",
+                            "audio_voice",
+                            "external_dependency",
+                            "other",
+                        ],
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
+    },
+
     # =========================
     # BROWSER TAB TOOLS
     # =========================
@@ -861,10 +969,29 @@ def execute_tool_call(tool_name, arguments_json, progress_callback=None):
     except json.JSONDecodeError:
         return {
             "success": False,
+            "invalid_tool_arguments": True,
             "message": "Invalid tool arguments.",
         }
 
     try:
+        # =========================
+        # CAPABILITY GAP TOOLS
+        # =========================
+        if tool_name == "log_capability_gap":
+            return log_capability_gap(
+                original_request=arguments.get("original_request", ""),
+                attempted=arguments.get("attempted", ""),
+                failure_reason=arguments.get("failure_reason", ""),
+                category=arguments.get("category", "other"),
+                source=arguments.get("source", "ai_reported"),
+            )
+
+        if tool_name == "summarize_capability_gaps":
+            return summarize_capability_gaps(
+                limit=arguments.get("limit", 5),
+                category=arguments.get("category"),
+            )
+
         # =========================
         # BROWSER TAB TOOLS
         # =========================
@@ -1002,6 +1129,7 @@ def execute_tool_call(tool_name, arguments_json, progress_callback=None):
             if not is_safe_terminal_command(command):
                 return {
                     "success": False,
+                    "blocked_by_safety": True,
                     "message": "That terminal command looks potentially destructive, so I did not run it.",
                 }
 

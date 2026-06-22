@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#020609">
+    <title>JARVIS HUD</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main id="hudRoot" class="hud-root" data-status="STANDBY">
+      <canvas id="reactorCanvas" aria-hidden="true"></canvas>
+
+      <section class="top-strip" aria-label="Jarvis status">
+        <div class="brand-block">
+          <div class="brand-title">JARVIS</div>
+          <div id="statusMeta" class="brand-meta">LOCAL WINDOWS ASSISTANT</div>
+        </div>
+
+        <div class="status-block">
+          <div id="statusLabel" class="status-label">STANDBY</div>
+          <div id="subStatusLabel" class="sub-status-label">Awaiting wake phrase</div>
+        </div>
+
+        <div class="hud-actions">
+          <button id="closeWidgetsBtn" class="hud-button" type="button" title="Close all widgets">CLEAR</button>
+          <button id="fullscreenBtn" class="hud-button" type="button" title="Fullscreen">FULL</button>
+        </div>
+      </section>
+
+      <section class="center-readout" aria-label="Current Jarvis activity">
+        <div id="activityKicker" class="activity-kicker">LOCAL CORE</div>
+        <h1 id="activityTitle">STANDBY</h1>
+        <p id="activityDetail">Awaiting wake phrase</p>
+      </section>
+
+      <section id="widgetDock" class="widget-dock" aria-label="Jarvis widgets"></section>
+
+      <section class="bottom-console" aria-label="Recent conversation">
+        <div class="console-head">
+          <span>CONVERSATION</span>
+          <span id="clockLabel">--:--</span>
+        </div>
+        <div id="chatRail" class="chat-rail"></div>
+      </section>
+
+      <div id="connectionBadge" class="connection-badge">CONNECTING</div>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

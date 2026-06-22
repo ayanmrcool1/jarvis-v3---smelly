@@ -1,8 +1,8 @@
 @echo off
 cd /d C:\Jarvis
 
-echo Starting J.A.R.V.I.S Web HUD...
-start "J.A.R.V.I.S Web HUD" ".venv\Scripts\pythonw.exe" "app\web_hud_server.py" --open --port 8765
+echo Starting J.A.R.V.I.S Desktop HUD...
+start "J.A.R.V.I.S Desktop HUD" ".venv\Scripts\pythonw.exe" "app\jarvis_ui.py"
 
 timeout /t 2 /nobreak >nul
 

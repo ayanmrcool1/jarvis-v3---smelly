@@ -1,0 +1,22 @@
+[
+  {
+    "timestamp": "2026-06-22T02:01:56+10:00",
+    "original_request": "Complete the pending app opening request. Original request: Open something.. App name: Don't worry, never mind.",
+    "attempted": "Called tool open_application with arguments {\"app_name\": \"Don't worry, never mind\"}.",
+    "failure_reason": "I couldn't find Don't worry, never mind installed.",
+    "category": "app_or_website",
+    "source": "tool_failure",
+    "tool_name": "open_application",
+    "tool_arguments": {
+      "app_name": "Don't worry, never mind"
+    },
+    "metadata": {
+      "result_keys": [
+        "attempted_locations",
+        "message",
+        "success",
+        "top_matches"
+      ]
+    }
+  }
+]

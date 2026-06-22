@@ -1,70 +1,70 @@
 {
-  "status": "LISTENING",
-  "sub_status": "Listening",
-  "detail": "Waiting for speech",
+  "status": "STANDBY",
+  "sub_status": "Awaiting wake phrase or keybind",
+  "detail": "Say Hey Jarvis or press Ctrl+Space",
   "active_widgets": [],
   "orb_position": "center",
   "chat_messages": [
     {
-      "id": "51dde793c2444bc9b8a919a652d7348e",
+      "id": "e55d36f1a7b4454bb0fd83ede0093684",
       "role": "user",
-      "text": "Show me good headphones.",
-      "timestamp": "2026-06-21T23:16:26"
+      "text": "Yes, you are still listening. Good boy.",
+      "timestamp": "2026-06-22T17:41:54"
     },
     {
-      "id": "5dd50b4a6d12454d95c2e8edf1c6c184",
+      "id": "56a00a9ffb764f92a938a3d1446f1c89",
       "role": "jarvis",
-      "text": "Searching YouTube.",
-      "timestamp": "2026-06-21T23:16:30"
+      "text": "Thank you! I'm here and ready to assist.",
+      "timestamp": "2026-06-22T17:41:58"
     },
     {
-      "id": "11a3321633c84bb9b9ee49489fa91bf0",
+      "id": "023bf68ee4a0474192a5ccb973ded1dc",
       "role": "user",
-      "text": "right here.",
-      "timestamp": "2026-06-21T23:16:34"
+      "text": "What's up?",
+      "timestamp": "2026-06-22T17:42:22"
     },
     {
-      "id": "76419b20010243b6819d17559c914a2b",
+      "id": "2be134f021b14b8cbd64b8c2142a5fe1",
       "role": "jarvis",
-      "text": "Could you clarify what you mean by \"right here\"?",
-      "timestamp": "2026-06-21T23:16:39"
+      "text": "Not much, just here and ready to help! What\u2019s up with you?",
+      "timestamp": "2026-06-22T17:42:27"
     },
     {
-      "id": "2fb159a62e5041a0a4b1091c74a95da3",
+      "id": "38fdb3a8a855444c9ffb4216fa44a529",
       "role": "user",
-      "text": "Yeah, the mic is tweaking.",
-      "timestamp": "2026-06-21T23:16:45"
+      "text": "I view.",
+      "timestamp": "2026-06-22T17:42:30"
     },
     {
-      "id": "9c495503a61a4fb7a7157adbd63ddc0a",
+      "id": "db7579e335104262bb9afe0dbb4f5a9a",
       "role": "jarvis",
-      "text": "It sounds like you might need to adjust the mic settings or reposition it. Would you like help with that?",
-      "timestamp": "2026-06-21T23:16:53"
+      "text": "Got it! Let me know if you need anything.",
+      "timestamp": "2026-06-22T17:42:34"
     },
     {
-      "id": "801ea82e06984bbdbe4508d2a0e5eca0",
+      "id": "8fecbee663a44fb48d6861787339af72",
       "role": "user",
-      "text": "For me good headphones on Google.",
-      "timestamp": "2026-06-21T23:16:57"
+      "text": "What's up G?",
+      "timestamp": "2026-06-22T17:42:43"
     },
     {
-      "id": "ca706b9ada564a0f96bfeda501cf7657",
+      "id": "bbb102dc57dd4081b760a9d69a9cef1f",
       "role": "jarvis",
-      "text": "Searching now.",
-      "timestamp": "2026-06-21T23:17:00"
+      "text": "Just hanging out, ready to assist you! What\u2019s up with you?",
+      "timestamp": "2026-06-22T17:42:49"
     },
     {
-      "id": "c889b801981a4b8ab625f2db24175ef0",
+      "id": "3e5219fabfc94f49b3736b1d136ee1c5",
       "role": "user",
-      "text": "listening now.",
-      "timestamp": "2026-06-21T23:17:02"
+      "text": "What's up matey?",
+      "timestamp": "2026-06-22T17:43:06"
     },
     {
-      "id": "b57a41ddd8ca4c228bf3def28eb49e5e",
+      "id": "eb114ff58a87492e9c5cf7f9c4fc7142",
       "role": "jarvis",
-      "text": "I'm here and ready. What do you want to talk about?",
-      "timestamp": "2026-06-21T23:17:08"
+      "text": "Ahoy! Just here, ready to help you out. What\u2019s on your mind?",
+      "timestamp": "2026-06-22T17:43:12"
     }
   ],
-  "updated_at": "2026-06-21T23:17:09"
+  "updated_at": "2026-06-22T17:43:13"
 }

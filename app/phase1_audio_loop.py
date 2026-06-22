@@ -1,3 +1,6 @@
+import os
+import queue
+import threading
 import time
 import math
 from pathlib import Path
@@ -10,8 +13,10 @@ from scipy.io.wavfile import write as write_wav
 from openwakeword.model import Model
 from openwakeword.utils import download_models
 
+from dotenv import load_dotenv
 from faster_whisper import WhisperModel
 from ai_brain import JarvisBrain
+from keybind_listener import GlobalHotkeyListener
 from tts_engine import JarvisTTS
 from speech_style import humanise_jarvis_response
 from router import JarvisRouter
@@ -20,6 +25,24 @@ from ui_state import write_ui_state, append_chat_message
 # =========================
 # JARVIS PHASE 1 SETTINGS
 # =========================
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_PATH = BASE_DIR / ".env"
+load_dotenv(ENV_PATH)
+
+
+def get_env_float(name, default):
+    value = os.getenv(name)
+
+    if value is None or str(value).strip() == "":
+        return default
+
+    try:
+        return float(value)
+    except ValueError:
+        print(f"Invalid {name} value: {value!r}. Using {default}.")
+        return default
+
 
 SAMPLE_RATE = 16000
 CHANNELS = 1
@@ -33,18 +56,26 @@ SILENCE_SECONDS_TO_STOP = 0.4
 MAX_COMMAND_SECONDS = 10.0
 MIN_COMMAND_SECONDS = 0.3
 PRE_ROLL_SECONDS = 1.5
+WAKE_SPEECH_START_TIMEOUT_SECONDS = get_env_float(
+    "JARVIS_WAKE_SPEECH_START_TIMEOUT_SECONDS",
+    6.0,
+)
+WAKE_FOLLOWUP_SPEECH_START_TIMEOUT_SECONDS = get_env_float(
+    "JARVIS_FOLLOWUP_SPEECH_START_TIMEOUT_SECONDS",
+    8.0,
+)
+KEYBIND_SILENCE_SECONDS_TO_STOP = get_env_float(
+    "JARVIS_KEYBIND_SILENCE_SECONDS",
+    5.0,
+)
+KEYBIND_SPEECH_START_TIMEOUT_SECONDS = get_env_float(
+    "JARVIS_KEYBIND_SPEECH_START_TIMEOUT_SECONDS",
+    5.0,
+)
+HOTKEY_TEXT = os.getenv("JARVIS_HOTKEY", "ctrl+space").strip() or "ctrl+space"
 
 WHISPER_BEAM_SIZE = 1
 MIN_AUDIO_RMS = 180.0
-
-EXIT_PHRASES = [
-    "stop listening",
-    "go to sleep",
-    "that is all",
-    "that's all",
-    "goodbye",
-    "bye",
-]
 
 COMMON_WHISPER_HALLUCINATIONS = [
     "thank you for watching",
@@ -52,7 +83,6 @@ COMMON_WHISPER_HALLUCINATIONS = [
     "thank you",
 ]
 
-BASE_DIR = Path(__file__).resolve().parent.parent
 RECORDINGS_DIR = BASE_DIR / "recordings"
 RECORDINGS_DIR.mkdir(exist_ok=True)
 
@@ -160,16 +190,6 @@ def normalize_text(text):
     return text
 
 
-def should_exit_active_mode(transcription):
-    clean_text = normalize_text(transcription)
-
-    for phrase in EXIT_PHRASES:
-        if phrase in clean_text:
-            return True
-
-    return False
-
-
 def is_likely_hallucination(transcription):
     clean_text = normalize_text(transcription)
 
@@ -180,7 +200,16 @@ def is_likely_hallucination(transcription):
     return False
 
 
-def record_until_silence(stream, filename):
+def record_until_silence(
+    stream,
+    filename,
+    silence_seconds_to_stop=SILENCE_SECONDS_TO_STOP,
+    max_command_seconds=MAX_COMMAND_SECONDS,
+    min_command_seconds=MIN_COMMAND_SECONDS,
+    speech_start_timeout_seconds=None,
+    stop_event=None,
+    manual_stop_label="Manual stop requested",
+):
     """
     Wait until speech starts, then keep recording until silence is detected.
     Also prints profiling for:
@@ -197,8 +226,15 @@ def record_until_silence(stream, filename):
     set_ui_state("LISTENING", "Listening", "Waiting for speech")
 
     pre_roll_chunks = max(1, math.ceil((PRE_ROLL_SECONDS * SAMPLE_RATE) / CHUNK_SIZE))
-    silence_chunks_needed = max(1, math.ceil((SILENCE_SECONDS_TO_STOP * SAMPLE_RATE) / CHUNK_SIZE))
-    max_chunks = max(1, math.ceil((MAX_COMMAND_SECONDS * SAMPLE_RATE) / CHUNK_SIZE))
+    silence_chunks_needed = max(1, math.ceil((silence_seconds_to_stop * SAMPLE_RATE) / CHUNK_SIZE))
+    max_chunks = max(1, math.ceil((max_command_seconds * SAMPLE_RATE) / CHUNK_SIZE))
+    speech_start_deadline = None
+
+    if speech_start_timeout_seconds is not None:
+        speech_start_deadline = time.monotonic() + max(
+            0.1,
+            float(speech_start_timeout_seconds),
+        )
 
     pre_roll = deque(maxlen=pre_roll_chunks)
     recorded_chunks = []
@@ -210,6 +246,25 @@ def record_until_silence(stream, filename):
     last_wait_message = time.time()
 
     while True:
+        if stop_event and stop_event.is_set():
+            if recording and recorded_chunks:
+                print(f"{manual_stop_label}. Stopping recording.")
+                set_ui_state("THINKING", "Command captured", "Preparing transcription")
+                break
+
+            print(f"{manual_stop_label}. Cancelling listening.")
+            set_ui_state("STANDBY", "Listening cancelled")
+            return None, 0.0, "cancelled"
+
+        if (
+            not recording
+            and speech_start_deadline is not None
+            and time.monotonic() >= speech_start_deadline
+        ):
+            print("No speech detected. Returning to sleep mode.")
+            set_ui_state("STANDBY", "No speech detected")
+            return None, 0.0, "timeout"
+
         audio_block, overflowed = stream.read(CHUNK_SIZE)
 
         if overflowed:
@@ -245,7 +300,7 @@ def record_until_silence(stream, filename):
 
             elapsed_seconds = (chunks_recorded_after_start * CHUNK_SIZE) / SAMPLE_RATE
 
-            if chunk_rms < SPEECH_END_RMS and elapsed_seconds >= MIN_COMMAND_SECONDS:
+            if chunk_rms < SPEECH_END_RMS and elapsed_seconds >= min_command_seconds:
                 silent_chunks += 1
             else:
                 silent_chunks = 0
@@ -279,7 +334,7 @@ def record_until_silence(stream, filename):
         extra=f" | audio_duration={len(audio) / SAMPLE_RATE:.2f}s"
     )
 
-    return wav_path, total_rms
+    return wav_path, total_rms, "captured"
 
 
 def transcribe_audio(whisper_model, wav_path, rms):
@@ -368,80 +423,181 @@ def flush_microphone_buffer(stream, seconds=0.8):
 
 
 # =========================
-# ACTIVE MODE
+# SHARED VOICE TURN
 # =========================
 
-def active_listening_mode(stream, whisper_model, router, tts):
-    print("\nJARVIS ACTIVE.")
-    print("Speak normally. Say 'stop listening' or 'go to sleep' to exit.\n")
+def route_and_speak(transcription, router, tts):
+    add_chat_message("user", transcription)
 
-    set_ui_state("LISTENING", "Active mode", "Speak normally")
+    print("\n==============================")
+    print("JARVIS RESPONSE:")
 
-    command_count = 1
+    set_ui_state("THINKING", "Processing", transcription[:120])
 
-    while True:
-        command_profile_start = time.perf_counter()
+    router_profile_start = time.perf_counter()
+    route_result = router.handle(transcription)
+    profile_log("Router decision", router_profile_start)
 
-        wav_path, rms = record_until_silence(
+    print(f"Router source: {route_result.get('source')}")
+
+    jarvis_response = ""
+
+    if route_result.get("type") == "stream":
+        set_ui_state("SPEAKING", "Responding", "Streaming response")
+
+        tts_profile_start = time.perf_counter()
+        jarvis_response = tts.speak_stream(
+            route_result.get("stream")
+        )
+        profile_log("TTS stream call returned", tts_profile_start)
+
+        if jarvis_response:
+            set_ui_state("SPEAKING", "Responding", jarvis_response[:120])
+            add_chat_message("jarvis", jarvis_response)
+
+    else:
+        raw_response = route_result.get("response", "Done.")
+        jarvis_response = humanise_jarvis_response(raw_response)
+
+        print(jarvis_response)
+
+        set_ui_state("SPEAKING", "Responding", jarvis_response[:120])
+        tts.speak(jarvis_response)
+        add_chat_message("jarvis", jarvis_response)
+
+    return {
+        "response": jarvis_response or "",
+        "route_result": route_result,
+    }
+
+
+def response_invites_follow_up(response, router):
+    pending_intents = getattr(router, "pending_intents", None)
+
+    if pending_intents and pending_intents.has_pending():
+        return True
+
+    clean_response = str(response or "").strip()
+
+    if not clean_response:
+        return False
+
+    return clean_response.endswith("?")
+
+
+def run_voice_turn(
+    stream,
+    whisper_model,
+    router,
+    tts,
+    filename,
+    silence_seconds_to_stop=SILENCE_SECONDS_TO_STOP,
+    speech_start_timeout_seconds=WAKE_SPEECH_START_TIMEOUT_SECONDS,
+    stop_event=None,
+    manual_stop_label="Manual stop requested",
+):
+    command_profile_start = time.perf_counter()
+
+    wav_path, rms, capture_status = record_until_silence(
+        stream=stream,
+        filename=filename,
+        silence_seconds_to_stop=silence_seconds_to_stop,
+        speech_start_timeout_seconds=speech_start_timeout_seconds,
+        stop_event=stop_event,
+        manual_stop_label=manual_stop_label,
+    )
+
+    if capture_status != "captured":
+        return {
+            "status": capture_status,
+            "transcription": "",
+            "response": "",
+        }
+
+    transcription = transcribe_audio(whisper_model, wav_path, rms)
+
+    if not transcription:
+        return {
+            "status": "no_transcription",
+            "transcription": "",
+            "response": "",
+        }
+
+    response_result = route_and_speak(transcription, router, tts)
+    flush_microphone_buffer(stream)
+
+    profile_log("Full voice turn", command_profile_start)
+
+    return {
+        "status": "handled",
+        "transcription": transcription,
+        "response": response_result.get("response", ""),
+        "route_result": response_result.get("route_result", {}),
+    }
+
+
+def wake_word_command_mode(stream, whisper_model, router, tts, next_filename):
+    print("\nWake command mode active.")
+    print("Listening for one command.\n")
+
+    set_ui_state("LISTENING", "Wake word detected", "Listening for your command")
+
+    result = run_voice_turn(
+        stream=stream,
+        whisper_model=whisper_model,
+        router=router,
+        tts=tts,
+        filename=next_filename(),
+        silence_seconds_to_stop=SILENCE_SECONDS_TO_STOP,
+        speech_start_timeout_seconds=WAKE_SPEECH_START_TIMEOUT_SECONDS,
+    )
+
+    if result.get("status") == "handled" and response_invites_follow_up(
+        result.get("response"),
+        router,
+    ):
+        print("Jarvis response invited a follow-up. Listening for one extra turn.\n")
+        set_ui_state("LISTENING", "Follow-up invited", "Listening for your reply")
+
+        run_voice_turn(
             stream=stream,
-            filename=f"active_command_{command_count}.wav"
+            whisper_model=whisper_model,
+            router=router,
+            tts=tts,
+            filename=next_filename(),
+            silence_seconds_to_stop=SILENCE_SECONDS_TO_STOP,
+            speech_start_timeout_seconds=WAKE_FOLLOWUP_SPEECH_START_TIMEOUT_SECONDS,
         )
 
-        transcription = transcribe_audio(whisper_model, wav_path, rms)
 
-        if transcription and should_exit_active_mode(transcription):
-            print("Exit phrase detected. Returning to sleep mode.\n")
+def keybind_command_mode(stream, whisper_model, router, tts, next_filename, stop_event):
+    print("\nKeybind command mode active.")
+    print("Listening for one manual command.\n")
 
-            set_ui_state("SPEAKING", "Returning to sleep", "Going back to sleep")
-            tts.speak("Going back to sleep.")
+    set_ui_state("LISTENING", "Keybind active", "Listening for your command")
 
-            flush_microphone_buffer(stream)
+    return run_voice_turn(
+        stream=stream,
+        whisper_model=whisper_model,
+        router=router,
+        tts=tts,
+        filename=next_filename(),
+        silence_seconds_to_stop=KEYBIND_SILENCE_SECONDS_TO_STOP,
+        speech_start_timeout_seconds=KEYBIND_SPEECH_START_TIMEOUT_SECONDS,
+        stop_event=stop_event,
+        manual_stop_label="Hotkey pressed again",
+    )
 
-            set_ui_state("STANDBY", "Awaiting wake phrase")
-            break
 
-        if transcription:
-            add_chat_message("user", transcription)
+def consume_hotkey_trigger(trigger_queue):
+    triggered = False
 
-            print("\n==============================")
-            print("JARVIS RESPONSE:")
-
-            set_ui_state("THINKING", "Processing", transcription[:120])
-
-            router_profile_start = time.perf_counter()
-            route_result = router.handle(transcription)
-            profile_log("Router decision", router_profile_start)
-
-            print(f"Router source: {route_result.get('source')}")
-
-            if route_result.get("type") == "stream":
-                set_ui_state("SPEAKING", "Responding", "Streaming response")
-
-                tts_profile_start = time.perf_counter()
-                jarvis_response = tts.speak_stream(
-                    route_result.get("stream")
-                )
-                profile_log("TTS stream call returned", tts_profile_start)
-
-                if jarvis_response:
-                    set_ui_state("SPEAKING", "Responding", jarvis_response[:120])
-                    add_chat_message("jarvis", jarvis_response)
-
-            else:
-                raw_response = route_result.get("response", "Done.")
-                jarvis_response = humanise_jarvis_response(raw_response)
-
-                print(jarvis_response)
-
-                set_ui_state("SPEAKING", "Responding", jarvis_response[:120])
-                tts.speak(jarvis_response)
-                add_chat_message("jarvis", jarvis_response)
-
-            flush_microphone_buffer(stream)
-
-            set_ui_state("LISTENING", "Ready for next command", "Speak naturally")
-
-        command_count += 1
+    while True:
+        try:
+            trigger_queue.get_nowait()
+            triggered = True
+        except queue.Empty:
+            return triggered
 
 
 # =========================
@@ -475,6 +631,49 @@ def main():
 
     reset_wake_model(wake_model)
 
+    trigger_mode = {"value": "idle"}
+    trigger_lock = threading.Lock()
+    hotkey_trigger_queue = queue.Queue()
+    keybind_stop_event = threading.Event()
+
+    def set_trigger_mode(mode):
+        with trigger_lock:
+            trigger_mode["value"] = mode
+
+            if mode != "keybind":
+                keybind_stop_event.clear()
+
+    def on_hotkey_pressed():
+        with trigger_lock:
+            mode = trigger_mode["value"]
+
+            if mode == "idle":
+                hotkey_trigger_queue.put(time.monotonic())
+                return
+
+            if mode == "keybind":
+                keybind_stop_event.set()
+                return
+
+        print("Hotkey ignored while Jarvis is already handling a command.")
+
+    hotkey_listener = None
+
+    try:
+        hotkey_listener = GlobalHotkeyListener(HOTKEY_TEXT, on_hotkey_pressed).start()
+        print(f"Global keybind enabled: {hotkey_listener.display_name}")
+    except Exception as error:
+        print(f"Global keybind disabled: {error}")
+
+    hotkey_label = hotkey_listener.display_name if hotkey_listener else HOTKEY_TEXT
+    standby_detail = f"Say Hey Jarvis or press {hotkey_label}"
+    command_count = {"value": 1}
+
+    def next_filename():
+        filename = f"active_command_{command_count['value']}.wav"
+        command_count["value"] += 1
+        return filename
+
     with sd.InputStream(
         samplerate=SAMPLE_RATE,
         channels=CHANNELS,
@@ -483,14 +682,44 @@ def main():
     ) as stream:
 
         print("JARVIS is in sleep mode.")
-        set_ui_state("STANDBY", "Awaiting wake phrase", "Say Hey Jarvis")
-        print("Say: Hey Jarvis\n")
+        set_ui_state("STANDBY", "Awaiting wake phrase or keybind", standby_detail)
+        print(f"Say: Hey Jarvis or press {hotkey_label}\n")
 
         while True:
             audio_block, overflowed = stream.read(CHUNK_SIZE)
 
             if overflowed:
                 print("Warning: microphone buffer overflowed.")
+
+            if consume_hotkey_trigger(hotkey_trigger_queue):
+                print("\nGlobal keybind pressed.")
+
+                reset_wake_model(wake_model)
+                set_trigger_mode("keybind")
+                keybind_stop_event.clear()
+
+                try:
+                    keybind_command_mode(
+                        stream=stream,
+                        whisper_model=whisper_model,
+                        router=router,
+                        tts=tts,
+                        next_filename=next_filename,
+                        stop_event=keybind_stop_event,
+                    )
+                finally:
+                    set_trigger_mode("idle")
+
+                reset_wake_model(wake_model)
+
+                print("JARVIS is back in sleep mode.")
+                set_ui_state(
+                    "STANDBY",
+                    "Awaiting wake phrase or keybind",
+                    standby_detail,
+                )
+                print(f"Say: Hey Jarvis or press {hotkey_label}\n")
+                continue
 
             audio_block = audio_block.reshape(-1)
 
@@ -511,13 +740,28 @@ def main():
 
                 reset_wake_model(wake_model)
 
-                active_listening_mode(stream, whisper_model, router, tts)
+                set_trigger_mode("wake")
+
+                try:
+                    wake_word_command_mode(
+                        stream=stream,
+                        whisper_model=whisper_model,
+                        router=router,
+                        tts=tts,
+                        next_filename=next_filename,
+                    )
+                finally:
+                    set_trigger_mode("idle")
 
                 reset_wake_model(wake_model)
 
                 print("JARVIS is back in sleep mode.")
-                set_ui_state("STANDBY", "Awaiting wake phrase", "Say Hey Jarvis")
-                print("Say: Hey Jarvis\n")
+                set_ui_state(
+                    "STANDBY",
+                    "Awaiting wake phrase or keybind",
+                    standby_detail,
+                )
+                print(f"Say: Hey Jarvis or press {hotkey_label}\n")
 
 
 if __name__ == "__main__":
