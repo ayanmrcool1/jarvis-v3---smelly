@@ -17,6 +17,8 @@ try:
 except ImportError:
     winreg = None
 
+IS_WINDOWS = os.name == "nt"
+
 
 # =========================
 # JARVIS PHASE 4 SYSTEM TOOLS
@@ -744,6 +746,16 @@ def open_application(app_name, progress_callback=None):
                 "resolved_path": launch["resolved_path"],
             }
 
+        if not IS_WINDOWS:
+            return {
+                "success": False,
+                "message": (
+                    "Opening installed desktop apps is currently only supported on Windows. "
+                    "I can still open websites and URLs on this platform."
+                ),
+                "platform": os.name,
+            }
+
         progress.emit("I'll check your installed apps.")
         discovered_app, attempted_locations, top_matches = _find_installed_app(clean_name)
 
@@ -987,6 +999,13 @@ def set_volume(action):
     - mute
     - unmute
     """
+
+    if not IS_WINDOWS:
+        return {
+            "success": False,
+            "message": "System volume control is currently only supported on Windows.",
+            "platform": os.name,
+        }
 
     try:
         from pycaw.pycaw import AudioUtilities

@@ -1,12 +1,23 @@
 @echo off
-cd /d C:\Jarvis
+setlocal
 
-echo Starting J.A.R.V.I.S Desktop HUD...
-start "J.A.R.V.I.S Desktop HUD" ".venv\Scripts\pythonw.exe" "app\jarvis_ui.py"
+cd /d "%~dp0"
 
-timeout /t 2 /nobreak >nul
+if not exist ".venv\Scripts\pythonw.exe" (
+    echo JARVIS has not been set up yet.
+    echo Run Setup_Jarvis.bat first.
+    echo.
+    pause
+    exit /b 1
+)
 
-echo Starting J.A.R.V.I.S Voice Core...
-start /min "J.A.R.V.I.S Voice Core" ".venv\Scripts\python.exe" "app\phase1_audio_loop.py"
+if not exist ".env" (
+    echo JARVIS is missing its .env file.
+    echo Run Setup_Jarvis.bat first.
+    echo.
+    pause
+    exit /b 1
+)
 
-exit
+start "" ".venv\Scripts\pythonw.exe" "scripts\launch_jarvis.py" --hud desktop --detached
+exit /b 0

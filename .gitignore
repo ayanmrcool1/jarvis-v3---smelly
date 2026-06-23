@@ -1,10 +1,28 @@
+# Secrets and local config
 .env
+.env.*
+!.env.example
+
+# Python environments and caches
 venv/
 .venv/
+.venv_backup_*/
 __pycache__/
 *.pyc
+.pytest_cache/
+
+# Logs and generated runtime artifacts
 *.log
+logs/
+recordings/
+screenshots/
+backups/
+
+# Local JARVIS state. These files may contain private memories/profile/chat data.
+data/*.json
+data/user_profiles/
+data/tts_cache/
+
+# Frontend/runtime miscellany
 node_modules/
 .DS_Store
-data/web_hud_server.json
-data/tts_cache/

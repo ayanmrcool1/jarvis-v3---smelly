@@ -11,6 +11,7 @@ from openai import OpenAI
 
 from speech_style import humanise_jarvis_response
 from tools.memory_tools import build_memory_context
+from tools.user_profile_tools import build_user_profile_context
 from tools.tool_registry import TOOL_DEFINITIONS, execute_tool_call
 from tools.capability_gap_tools import record_tool_failure_if_gap
 
@@ -52,6 +53,7 @@ Current capabilities:
 - You can open apps/websites, search the web, search/play YouTube videos, run safe terminal commands, control volume, get system stats, and get date/time.
 - You can create, update, list, and delete routines.
 - You can remember, list, and forget useful long-term information.
+- You can maintain a per-user runtime profile for lightweight personalisation.
 - You can inspect the screen, inspect browser pages, and act on visible screen content.
 - You can control browser tabs with hotkeys.
 - You can do fast web research for current online information without opening a visible browser.
@@ -147,6 +149,14 @@ Safety:
 - For uncertain screen actions, ask briefly or recommend instead of clicking.
 - For future email, calendar, and messaging actions, prefer official API tools when available; use current page/screen tools only when the user wants visible UI control.
 
+Runtime profile behavior:
+- Use the runtime user profile as soft context for tone, vocabulary, habits, workflows, and project context.
+- The runtime profile guides your judgment, but it does not override the current request, safety, or common sense.
+- Prefer remember_user_profile_detail for durable personalisation such as response preferences, repeated corrections, vocabulary, workflows, project context, and Jarvis behavior guidance.
+- Use legacy memory tools for general long-term facts and notes that are not specifically user personalisation.
+- Do not save temporary comments, one-off moods, or sensitive personal information unless the user clearly wants it remembered.
+- A new active user may have a blank profile; do not assume details from another user.
+
 Response style:
 - By default, reply in one short sentence unless the user asks for detail.
 - Avoid robotic labels like “preferences:”, “user_profile:”, or “tool result”.
@@ -155,11 +165,11 @@ Response style:
 - Stay smooth, concise, and useful.
 
 Memory behavior:
-- Use saved memory when relevant.
+- Use the runtime profile and saved memory when relevant.
 - Decide memory intent from meaning, not from exact words.
 - Recall questions like "do you remember what we discussed" are questions, not save-memory requests.
-- Save memory only when the user clearly wants a durable preference, alias, workflow rule, or instruction stored for the future.
-- For passive memory, only save useful long-term preferences, aliases, workflow rules, or Jarvis behavior rules.
+- Save personalisation with remember_user_profile_detail when the user clearly wants a durable preference, repeated correction, vocabulary, workflow, project context, or Jarvis behavior rule stored for the future.
+- Save legacy memory with remember_memory for useful general long-term information such as saved websites, broad notes, or aliases that are not specifically active-user personalisation.
 - Do not save random temporary comments.
 - Do not save sensitive personal information unless the user clearly asks you to remember it.
 """
@@ -177,7 +187,7 @@ class JarvisBrain:
 
         if not self.api_key:
             raise ValueError(
-                "OPENAI_API_KEY is missing. Add it to your C:\\Jarvis\\.env file."
+                f"OPENAI_API_KEY is missing. Add it to your {ENV_PATH} file."
             )
 
         self.client = OpenAI(api_key=self.api_key)
@@ -193,10 +203,14 @@ class JarvisBrain:
 
     def _build_user_message(self, user_text):
         now = datetime.now().strftime("%A, %d %B %Y, %I:%M %p")
+        user_profile_context = build_user_profile_context()
         memory_context = build_memory_context()
 
         return f"""
 Current system time: {now}
+
+Runtime user profile:
+{user_profile_context}
 
 Saved Jarvis memory:
 {memory_context}
@@ -226,6 +240,9 @@ User said:
             "remember_memory",
             "list_memories",
             "forget_memory",
+            "remember_user_profile_detail",
+            "list_user_profile",
+            "forget_user_profile_detail",
             "analyse_screen",
             "take_screenshot",
             "get_active_window_info",

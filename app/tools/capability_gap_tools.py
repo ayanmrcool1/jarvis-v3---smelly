@@ -57,6 +57,9 @@ TOOL_CATEGORY_MAP = {
     "remember_memory": "memory_or_data",
     "list_memories": "memory_or_data",
     "forget_memory": "memory_or_data",
+    "remember_user_profile_detail": "memory_or_data",
+    "list_user_profile": "memory_or_data",
+    "forget_user_profile_detail": "memory_or_data",
     "create_todo_list": "todo",
     "add_todo_task": "todo",
     "list_todo_tasks": "todo",
@@ -83,6 +86,8 @@ INPUT_REQUIRED_TOOLS = {
     "delete_routine",
     "remember_memory",
     "forget_memory",
+    "remember_user_profile_detail",
+    "forget_user_profile_detail",
     "add_todo_task",
     "complete_todo_task",
     "remove_todo_task",
@@ -288,7 +293,7 @@ def should_log_tool_failure(tool_name, arguments_json, result):
         if result.get("match_type") in {"missing", "not_found", "ambiguous"}:
             return False
 
-    if tool_name in {"forget_memory", "delete_routine"} and not result.get("error"):
+    if tool_name in {"forget_memory", "forget_user_profile_detail", "delete_routine"} and not result.get("error"):
         return False
 
     return True

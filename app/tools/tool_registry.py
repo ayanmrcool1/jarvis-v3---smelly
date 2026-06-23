@@ -46,6 +46,12 @@ from tools.memory_tools import (
     forget_memory,
 )
 
+from tools.user_profile_tools import (
+    remember_user_profile_detail,
+    list_user_profile,
+    forget_user_profile_detail,
+)
+
 from tools.web_research_tools import fast_web_research
 
 from tools.hud_tools import control_hud_widget
@@ -830,6 +836,128 @@ TOOL_DEFINITIONS = [
     },
 
     # =========================
+    # RUNTIME USER PROFILE TOOLS
+    # =========================
+    {
+        "type": "function",
+        "function": {
+            "name": "remember_user_profile_detail",
+            "description": (
+                "Save a durable personalisation detail to the active user's runtime profile. "
+                "Use this for response preferences, repeated corrections, vocabulary, habits, workflows, "
+                "project-specific context, Jarvis behavior guidance, or safety/confirmation preferences. "
+                "The profile is soft context for future turns; it should guide the AI without overriding "
+                "the current request or safety. Prefer this over remember_memory for personalisation. "
+                "Do not use it for one-off comments or sensitive personal information unless the user clearly "
+                "wants it remembered."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "identity",
+                            "response_preferences",
+                            "vocabulary",
+                            "habits",
+                            "workflows",
+                            "project_context",
+                            "jarvis_behavior",
+                            "safety_preferences",
+                            "corrections",
+                            "notes",
+                        ],
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "The concise profile detail to remember.",
+                    },
+                    "source": {
+                        "type": "string",
+                        "enum": ["explicit", "passive"],
+                    },
+                    "confidence": {"type": "number"},
+                    "tags": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                },
+                "required": ["category", "content"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_user_profile",
+            "description": (
+                "List saved details from the active user's runtime profile. Use this when the user asks "
+                "what is in their profile, what preferences Jarvis has saved for them, or how Jarvis is "
+                "personalised for them."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "identity",
+                            "response_preferences",
+                            "vocabulary",
+                            "habits",
+                            "workflows",
+                            "project_context",
+                            "jarvis_behavior",
+                            "safety_preferences",
+                            "corrections",
+                            "notes",
+                        ],
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "forget_user_profile_detail",
+            "description": (
+                "Forget/delete a saved detail from the active user's runtime profile. Use only when the user "
+                "clearly asks Jarvis to remove or stop remembering a personalisation detail."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Text to match against saved profile details.",
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "identity",
+                            "response_preferences",
+                            "vocabulary",
+                            "habits",
+                            "workflows",
+                            "project_context",
+                            "jarvis_behavior",
+                            "safety_preferences",
+                            "corrections",
+                            "notes",
+                        ],
+                    },
+                },
+                "required": ["query"],
+                "additionalProperties": False,
+            },
+        },
+    },
+
+    # =========================
     # MEMORY TOOLS
     # =========================
     {
@@ -837,9 +965,10 @@ TOOL_DEFINITIONS = [
         "function": {
             "name": "remember_memory",
             "description": (
-                "Save something useful to Jarvis memory. "
-                "Use this only when the user clearly wants a durable preference, alias, workflow rule, "
-                "profile detail, or Jarvis behavior rule stored for the future. Do not use this for recall "
+                "Save useful general long-term information to Jarvis memory, such as saved websites, "
+                "broad notes, or aliases that are not specifically active-user personalisation. "
+                "For response preferences, repeated corrections, vocabulary, workflows, project context, "
+                "or Jarvis behavior guidance, prefer remember_user_profile_detail. Do not use this for recall "
                 "questions like 'do you remember...' unless the user is actually asking you to save something."
             ),
             "parameters": {
@@ -1157,6 +1286,29 @@ def execute_tool_call(tool_name, arguments_json, progress_callback=None):
 
         if tool_name == "delete_routine":
             return delete_routine(arguments.get("routine_name", ""))
+
+        # =========================
+        # RUNTIME USER PROFILE TOOLS
+        # =========================
+        if tool_name == "remember_user_profile_detail":
+            return remember_user_profile_detail(
+                category=arguments.get("category", "notes"),
+                content=arguments.get("content", ""),
+                source=arguments.get("source", "explicit"),
+                confidence=arguments.get("confidence", 1.0),
+                tags=arguments.get("tags", []),
+            )
+
+        if tool_name == "list_user_profile":
+            return list_user_profile(
+                category=arguments.get("category")
+            )
+
+        if tool_name == "forget_user_profile_detail":
+            return forget_user_profile_detail(
+                query=arguments.get("query", ""),
+                category=arguments.get("category"),
+            )
 
         # =========================
         # MEMORY TOOLS

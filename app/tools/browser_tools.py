@@ -1,3 +1,4 @@
+import os
 import time
 import ctypes
 from ctypes import wintypes
@@ -19,6 +20,8 @@ from tools.screen_tools import (
 # =========================
 # JARVIS BROWSER / PAGE TOOLS
 # =========================
+
+IS_WINDOWS = os.name == "nt"
 
 BROWSER_PROCESSES = [
     "chrome.exe",
@@ -52,6 +55,12 @@ def get_foreground_window_details():
     """
     Gets active window title, process name, process id, and handle on Windows.
     """
+
+    if not IS_WINDOWS or not hasattr(ctypes, "windll"):
+        return {
+            "success": False,
+            "message": "Active browser/window inspection is currently only supported on Windows.",
+        }
 
     try:
         user32 = ctypes.windll.user32
